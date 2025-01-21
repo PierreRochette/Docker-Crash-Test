@@ -1,0 +1,40 @@
+services:
+  
+  client:
+    container_name: crash-test-client
+    build:
+      context: ./client
+      target: dev
+      dockerfile: Dockerfile
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+      - /client/.next
+    labels:
+      - "traefik.http.routers.client.rule=Host(`client.localhost`)"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - traefik
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: crash-test-server
+    ports:
+      - "3001:3001"
+    labels:
+      - "traefik.http.routers.server.rule=(Host(`client.localhost`) && PathPrefix(`/api`))"
+    restart: always
+    depends_on:
+      - traefik
+
+  traefik: 
+    image: traefik:v2.11
+    command: --api.insecure=true --providers.docker
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
