@@ -1,47 +1,86 @@
 services:
-  
-  client: 
-    build: 
-      context: ./client
-      dockerfile: Dockerfile
-      args:
-        - VITE_APP_BACKEND_ADDRESS=https://localhost/api/prod
-    container_name: crash-test-client-prod
-    restart: always
-    networks:
-      - network
-    labels:
-      - "traefik.http.routers.client.rule=Host(`client.localhost`)"
 
-  server:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
-    container_name: crash-test-server
-    ports:
-      - "3001:3001"
-    labels:
-      - "traefik.http.routers.server.rule=(Host(`api.localhost`) && PathPrefix(`/api`))"
-      - "traefik.http.services.server.loadbalancer.server.port=3001"
+  postgres:
+    image: postgres:16
+    container_name: postgres
     restart: always
-    networks:
-      - network
-    # depends_on:
-    #   - traefik
-
-  traefik: 
-    image: traefik:v2.11
-    command: 
-      - --api.insecure=true 
-      - --providers.docker
-      - --entrypoints.web.address=:80
+    env_file:
+      - .env
+    environment:
+      - TZ=Europe/Paris
     ports:
-      - "80:80"
-      - "8080:8080"
+      - "5432:5432"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - postgres-data:/var/lib/postgresql/data
     networks:
-      - network
+      - postgres-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    env_file:
+      - .env
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks: 
+      - postgres-network
+    restart: always
+  
+  # client: 
+  #   build: 
+  #     context: ./client
+  #     dockerfile: Dockerfile
+  #     args:
+  #       - VITE_APP_BACKEND_ADDRESS=https://localhost/api/prod
+  #   container_name: crash-test-client-prod
+  #   restart: always
+  #   networks:
+  #     - network
+  #   labels:
+  #     - "traefik.http.routers.client.rule=Host(`client.localhost`)"
+
+  # server:
+  #   build:
+  #     context: ./server
+  #     dockerfile: Dockerfile
+  #   container_name: crash-test-server
+  #   ports:
+  #     - "3001:3001" # a fermer pour faire le loadbalancer
+  #   labels:
+  #     - "traefik.http.routers.server.rule=(Host(`api.localhost`) && PathPrefix(`/api`))"
+  #     - "traefik.http.services.server.loadbalancer.server.port=3001"
+  #   restart: always
+  #   networks:
+  #     - network
+  #   # depends_on:
+  #   #   - traefik
+
+  #   # Ajouter plusieurs replicated et traefik va faire le load balance tout seul, minimum 2
+
+  # traefik: 
+  #   image: traefik:v2.11
+  #   command: 
+  #     - --api.insecure=true 
+  #     - --providers.docker
+  #     - --entrypoints.web.address=:80
+  #   ports:
+  #     - "80:80"
+  #     - "8080:8080"
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   networks:
+  #     - network
+
+volumes:
+  postgres-data:
 
 networks:
+  postgres-network:
   network: 
