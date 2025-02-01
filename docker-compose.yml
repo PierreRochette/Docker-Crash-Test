@@ -4,12 +4,13 @@ services:
     container_name: crash-test-client
     build:
       context: ./client
-      target: dev
-      dockerfile: Dockerfile
+      dockerfile: ./Dockerfile
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - NODE_ENV=production
     volumes:
       - ./client:/app
       - /app/node_modules
-      - /client/.next
     labels:
       - "traefik.http.routers.client.rule=Host(`client.localhost`)"
     ports:
