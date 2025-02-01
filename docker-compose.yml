@@ -1,22 +1,17 @@
 services:
   
-  client:
-    container_name: crash-test-client
-    build:
+  client: 
+    build: 
       context: ./client
-      dockerfile: ./Dockerfile
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-      - NODE_ENV=production
-    volumes:
-      - ./client:/app
-      - /app/node_modules
-    labels:
-      - "traefik.http.routers.client.rule=Host(`client.localhost`)"
-    ports:
-      - "3000:3000"
-    depends_on:
-      - traefik
+      dockerfile: Dockerfile
+      args:
+        - VITE_APP_BACKEND_ADDRESS=https://localhost/api/prod
+    container_name: crash-test-client-prod
+    restart: always
+    networks:
+      - network
+    # depends_on:
+    #   - traefik
 
   server:
     build:
@@ -25,17 +20,20 @@ services:
     container_name: crash-test-server
     ports:
       - "3001:3001"
-    labels:
-      - "traefik.http.routers.server.rule=(Host(`client.localhost`) && PathPrefix(`/api`))"
+    # labels:
+    #   - "traefik.http.routers.server.rule=(Host(`client.localhost`) && PathPrefix(`/api`))"
     restart: always
-    depends_on:
-      - traefik
+    # depends_on:
+    #   - traefik
 
-  traefik: 
-    image: traefik:v2.11
-    command: --api.insecure=true --providers.docker
-    ports:
-      - "80:80"
-      - "8080:8080"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+  # traefik: 
+  #   image: traefik:v2.11
+  #   command: --api.insecure=true --providers.docker
+  #   ports:
+  #     - "80:80"
+  #     - "8080:8080"
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  network: 
