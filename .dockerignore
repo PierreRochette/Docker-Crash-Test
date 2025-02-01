@@ -7,3 +7,7 @@ package-lock.json
 .git
 .DS_Store
 .env
+.vscode
+.eslint*
+.prettier*
+.editorconfig

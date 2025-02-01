@@ -7,8 +7,6 @@ services:
         - VITE_APP_BACKEND_ADDRESS=https://localhost/api/prod
     container_name: crash-test-client-prod
     restart: always
-    ports:
-      - 3000:3000
     networks:
       - network
 
