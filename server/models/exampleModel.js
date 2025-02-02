@@ -1,5 +1,4 @@
 const { Model, DataTypes } = require("sequelize"); 
-const { sequelize } = require(".");
 
 class Example extends Model {}
 

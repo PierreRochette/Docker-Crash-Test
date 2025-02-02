@@ -33,50 +33,56 @@ services:
       - postgres-network
     restart: always
   
-  # client: 
-  #   build: 
-  #     context: ./client
-  #     dockerfile: Dockerfile
-  #     args:
-  #       - VITE_APP_BACKEND_ADDRESS=https://localhost/api/prod
-  #   container_name: crash-test-client-prod
-  #   restart: always
-  #   networks:
-  #     - network
-  #   labels:
-  #     - "traefik.http.routers.client.rule=Host(`client.localhost`)"
+  client: 
+    build: 
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        - VITE_APP_BACKEND_ADDRESS=https://localhost/api/prod
+    container_name: crash-test-client-prod
+    restart: always
+    networks:
+      - network
+    labels:
+      - "traefik.http.routers.client.rule=Host(`localhost`)"
 
-  # server:
-  #   build:
-  #     context: ./server
-  #     dockerfile: Dockerfile
-  #   container_name: crash-test-server
-  #   ports:
-  #     - "3001:3001" # a fermer pour faire le loadbalancer
-  #   labels:
-  #     - "traefik.http.routers.server.rule=(Host(`api.localhost`) && PathPrefix(`/api`))"
-  #     - "traefik.http.services.server.loadbalancer.server.port=3001"
-  #   restart: always
-  #   networks:
-  #     - network
-  #   # depends_on:
-  #   #   - traefik
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: crash-test-server
+    env_file:
+      - .env
+    # ports:
+    #   - "3001:3001" # a fermer pour faire le loadbalancer
+    labels:
+      - "traefik.http.routers.server.rule=(Host(`api.localhost`) && PathPrefix(`/api`))"
+      - "traefik.http.services.server.loadbalancer.server.port=3001"
+    restart: always
+    networks:
+      - network
+      - postgres-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      proxy:
+        condition: service_started
 
   #   # Ajouter plusieurs replicated et traefik va faire le load balance tout seul, minimum 2
 
-  # traefik: 
-  #   image: traefik:v2.11
-  #   command: 
-  #     - --api.insecure=true 
-  #     - --providers.docker
-  #     - --entrypoints.web.address=:80
-  #   ports:
-  #     - "80:80"
-  #     - "8080:8080"
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #   networks:
-  #     - network
+  proxy: 
+    image: traefik:v3.1.2
+    command: 
+      - --providers.docker
+      - --api.insecure=true 
+      - --entrypoints.web.address=:80
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - network
 
 volumes:
   postgres-data:
